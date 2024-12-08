@@ -1,0 +1,15 @@
+# Abaikan file environment
+.env
+
+# Abaikan file kredensial sensitif
+serviceAccountKey.json
+
+# Abaikan cache dan file sementara
+__pycache__/
+*.pyc
+*.pyo
+*.log
+
+# Abaikan file editor atau IDE
+.vscode/
+.idea/
