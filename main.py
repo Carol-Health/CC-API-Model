@@ -16,13 +16,14 @@ app = Flask(__name__)
 load_dotenv()
 
 # Firebase Admin SDK initialization
-FIREBASE_CREDENTIALS_PATH = os.getenv("FIREBASE_CREDENTIALS_PATH")
-if not FIREBASE_CREDENTIALS_PATH or not os.path.exists(FIREBASE_CREDENTIALS_PATH):
-    raise FileNotFoundError("Firebase credentials file not found.")
+# FIREBASE_CREDENTIALS_PATH = os.getenv("FIREBASE_CREDENTIALS_PATH")
+# if not FIREBASE_CREDENTIALS_PATH or not os.path.exists(FIREBASE_CREDENTIALS_PATH):
+#     raise FileNotFoundError("Firebase credentials file not found.")
 
 # Initialize Firebase Admin SDK with service account
-cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
-firebase_admin.initialize_app(cred)
+# cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
+# firebase_admin.initialize_app(cred)
+firebase_admin.initialize_app()
 
 # Initialize Firestore client
 db = firestore.client()
