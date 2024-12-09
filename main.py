@@ -37,18 +37,25 @@ model = load_model(DESTINATION_MODEL_PATH)
 class_names = ['calculus', 'caries', 'gingivitis', 'hypodontia', 'tooth_discoloration', 'ulcer']
 
 # Fungsi upload foto mulut dari user ke Storage
-def upload_to_storage(bucket_name, source_file, destination_name) :
+def upload_to_storage(source_file, destination_name) :
     try:
+        bucket_name = os.getenv("CLOUD_STORAGE_BUCKET")
+        base_url = os.getenv("CLOUD_STORAGE_URL")
+
+        # Menghubungkan ke Cloud Storage
         storage_client = storage.Client()
         bucket = storage_client.bucket(bucket_name)
         blob = bucket.blob(destination_name)
-        
+
+        # Upload file ke Cloud Storage
         blob.upload_from_string(source_file, content_type="image/jpeg")
-        public_url = f"https://storage.googleapis.com/{bucket_name}/{destination_name}"
-        
+
+        # Bangun URL publik
+        public_url = f"{base_url}{bucket_name}/{destination_name}"
+
         return public_url
     except Exception as e:
-        raise RuntimeError(f"Gagal upload ke bucket): {str(e)}")
+        raise RuntimeError(f"Gagal upload ke bucket: {str(e)}")
 
 
 @app.route('/')
@@ -64,9 +71,8 @@ def predict():
     file_data = file.read()
     
     try:
-        bucket_name = "carol-image-predict"
-        unique_filename = f"images/{uuid.uuid4()}.jpg"  # Nama file unik
-        public_url = upload_to_storage(bucket_name, file_data, unique_filename)
+        unique_filename = f"images/{uuid.uuid4()}.jpg"  
+        public_url = upload_to_storage(file_data, unique_filename)
     except Exception as e:
         return jsonify({"error": f"Failed to upload image: {str(e)}"}), 500
     
