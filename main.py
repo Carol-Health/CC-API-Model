@@ -5,10 +5,12 @@ import numpy as np
 import os
 import requests
 import uuid
+import pytz
 from datetime import datetime
 from dotenv import load_dotenv
 import firebase_admin
 from firebase_admin import firestore
+from google.cloud import storage
 
 app = Flask(__name__)
 
@@ -34,6 +36,21 @@ model = load_model(DESTINATION_MODEL_PATH)
 
 class_names = ['calculus', 'caries', 'gingivitis', 'hypodontia', 'tooth_discoloration', 'ulcer']
 
+# Fungsi upload foto mulut dari user ke Storage
+def upload_to_storage(bucket_name, source_file, destination_name) :
+    try:
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(bucket_name)
+        blob = bucket.blob(destination_name)
+        
+        blob.upload_from_string(source_file, content_type="image/jpeg")
+        public_url = f"https://storage.googleapis.com/{bucket_name}/{destination_name}"
+        
+        return public_url
+    except Exception as e:
+        raise RuntimeError(f"Gagal upload ke bucket): {str(e)}")
+
+
 @app.route('/')
 def home():
     return "Welcome to the oral disease detection app!"
@@ -44,7 +61,16 @@ def predict():
         return jsonify({"error": "No file uploaded"}), 400
     
     file = request.files['file']
-    img = tf.io.decode_image(file.read(), channels=3)
+    file_data = file.read()
+    
+    try:
+        bucket_name = "carol-image-predict"
+        unique_filename = f"images/{uuid.uuid4()}.jpg"  # Nama file unik
+        public_url = upload_to_storage(bucket_name, file_data, unique_filename)
+    except Exception as e:
+        return jsonify({"error": f"Failed to upload image: {str(e)}"}), 500
+    
+    img = tf.io.decode_image(file_data, channels=3)
     img = tf.image.resize(img, (224, 224))  # Resize sesuai model input
     img = img / 255.0  # Normalisasi
     img = np.expand_dims(img, axis=0)
@@ -59,22 +85,35 @@ def predict():
         return jsonify({
             "class": "Not detected",
             "confidence": float(confidence),
-            "message": "Confidence is too low for reliable prediction."
+            "message": "Confidence is too low for reliable prediction.",
+            "image_url": public_url
         })
 
     # Ambil data dari Firestore
     disease_data = get_disease_info(predicted_class)
-
     
-     # Simpan data prediksi ke Firestore
+    # Simpan data prediksi ke Firestore
     prediction_id = str(uuid.uuid4())  # Generate a unique ID
-    created_at = datetime.utcnow().isoformat()
+    # Dapatkan waktu UTC saat ini
+    utc_now = datetime.utcnow().replace(tzinfo=pytz.utc)
+
+    # Tentukan zona waktu WIB (UTC+7)
+    wib = pytz.timezone('Asia/Jakarta')
+
+    # Konversi waktu UTC ke WIB
+    wib_now = utc_now.astimezone(wib)
+
+    # Format waktu sesuai kebutuhan
+    formatted_time = wib_now.strftime('%Y-%m-%d %H:%M:%S')
+    
+    
     prediction_data = {
         "id": prediction_id,
-        "result": predicted_class,
+        "name": disease_data.get("name", "No name available"),
         "description": disease_data.get("description", "No description available"),
         "treatment": disease_data.get("treatment", "No treatment available"),
-        "createdAt": created_at
+        "image_url": public_url,
+        "createdAt": formatted_time
     }
     
     # Simpan data prediksi di koleksi 'predictions'
@@ -82,11 +121,12 @@ def predict():
     
     
     return jsonify({
-        "class": predicted_class,
+        "name": disease_data.get("name", "No name available"),
         "confidence": float(confidence),
         "description": disease_data.get("description", "No description available"),
         "treatment": disease_data.get("treatment", "No treatment available"),
-        "createdAt": created_at
+        "image_url": public_url,
+        "createdAt": formatted_time
     })
 
 @app.route("/history", methods=["GET"])
@@ -100,9 +140,10 @@ def get_history():
             prediction_data = prediction.to_dict()
             history.append({
                 "id": prediction.id,
-                "result": prediction_data.get("result"),
+                "name": prediction_data.get("name"),
                 "description": prediction_data.get("description"),
                 "treatment": prediction_data.get("treatment"),
+                "image_url": prediction_data.get("image_url"),
                 "createdAt": prediction_data.get("createdAt")
             })
 
