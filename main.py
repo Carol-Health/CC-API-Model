@@ -136,8 +136,8 @@ def predict():
 @app.route("/history/<uid>", methods=["GET"])
 def get_history(uid):
     try:
-        predictions_ref = db.collection("predictions").where('uid', "==", uid).get
-        predictions = predictions_ref.stream()
+        predictions_ref = db.collection("predictions").where('uid', "==", uid)
+        predictions = predictions_ref.get()
 
         history = []
         for prediction in predictions:
