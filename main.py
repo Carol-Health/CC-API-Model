@@ -133,10 +133,10 @@ def predict():
         "createdAt": formatted_time
     })
 
-@app.route("/history", methods=["GET"])
-def get_history():
+@app.route("/history/<uid>", methods=["GET"])
+def get_history(uid):
     try:
-        predictions_ref = db.collection("predictions")
+        predictions_ref = db.collection("predictions").where('uid', "==", uid).get
         predictions = predictions_ref.stream()
 
         history = []
@@ -144,11 +144,11 @@ def get_history():
             prediction_data = prediction.to_dict()
             history.append({
                 "id": prediction.id,
+                "createdAt": prediction_data.get("createdAt"),
                 "name": prediction_data.get("name"),
                 "description": prediction_data.get("description"),
                 "treatment": prediction_data.get("treatment"),
-                "image_url": prediction_data.get("image_url"),
-                "createdAt": prediction_data.get("createdAt")
+                "image_url": prediction_data.get("image_url")
             })
 
         return jsonify({"status": "success", "data": history})
