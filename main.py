@@ -1,3 +1,4 @@
+
 from flask import Flask, request, jsonify
 from tensorflow.keras.models import load_model
 import tensorflow as tf
@@ -64,6 +65,11 @@ def home():
 
 @app.route("/predict", methods=["POST"])
 def predict():
+    # Validasi UID dari request body
+    uid = request.form.get('uid')  # Asumsi UID dikirim melalui form-data
+    if not uid:
+        return jsonify({"error": "UID is required"}), 400
+
     if 'file' not in request.files:
         return jsonify({"error": "No file uploaded"}), 400
     
@@ -100,21 +106,14 @@ def predict():
     
     # Simpan data prediksi ke Firestore
     prediction_id = str(uuid.uuid4())  # Generate a unique ID
-    # Dapatkan waktu UTC saat ini
     utc_now = datetime.utcnow().replace(tzinfo=pytz.utc)
-
-    # Tentukan zona waktu WIB (UTC+7)
     wib = pytz.timezone('Asia/Jakarta')
-
-    # Konversi waktu UTC ke WIB
     wib_now = utc_now.astimezone(wib)
-
-    # Format waktu sesuai kebutuhan
     formatted_time = wib_now.strftime('%Y-%m-%d %H:%M:%S')
-    
     
     prediction_data = {
         "id": prediction_id,
+        "uid": uid,  # Tambahkan UID ke data prediksi
         "name": disease_data.get("name", "No name available"),
         "description": disease_data.get("description", "No description available"),
         "treatment": disease_data.get("treatment", "No treatment available"),
@@ -124,7 +123,6 @@ def predict():
     
     # Simpan data prediksi di koleksi 'predictions'
     db.collection("predictions").document(prediction_id).set(prediction_data)
-    
     
     return jsonify({
         "name": disease_data.get("name", "No name available"),
