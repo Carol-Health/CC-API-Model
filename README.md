@@ -34,12 +34,12 @@ This API is designed to support the **Carol Health** application. The applicatio
 
 ---
 
-## Contoh Penggunaan API
+## API Usage
 
 ### 1. **/predict**
 - **URL**: `/predict`
 - **Method**: `POST`
-- **Deskripsi**: Endpoint ini digunakan untuk mengirimkan foto mulut, dan API akan memberikan hasil prediksi penyakit berdasarkan model Machine Learning.
+- **Deskripsi**: This endpoint is used to send photos of the mouth, and the API will provide disease prediction results based on the Machine Learning model.
 - **Request Body**:
   ```json
   {
@@ -59,7 +59,7 @@ This API is designed to support the **Carol Health** application. The applicatio
 ### 1. **/history<uid>**
 - **URL**: `/history<uid>`
 - **Method**: `GET`
-- **Deskripsi**: Endpoint ini digunakan untuk mendapatkan riwayat prediksi penyakit berdasarkan ID pengguna.
+- **Deskripsi**: This endpoint is used to get a history of disease predictions based on user ID.
 - **Response Body**:
   ```json
   {
