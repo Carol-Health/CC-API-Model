@@ -9,6 +9,13 @@ API ini dirancang untuk mendukung aplikasi **Carol Health**. Aplikasi ini memban
 - Google Cloud Storage
 - TensorFlow
 - Flask
+- flask==3.1.0
+- tensorflow==2.17.1
+- gunicorn==21.2.0
+- python-dotenv==1.0.1
+- firebase-admin
+- google-cloud-storage
+- pytz
   
 **Versi**: 1.0.0
 
