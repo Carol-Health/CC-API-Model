@@ -16,10 +16,21 @@ API ini dirancang untuk mendukung aplikasi **Carol Health**. Aplikasi ini memban
 - firebase-admin
 - google-cloud-storage
 - pytz
-  
-**Versi**: 1.0.0
 
 ---
+
+## Tools
+- TensorFlow
+- Flask
+- Python
+- VS Code
+- Google Cloud SDK
+- Firebase Admin SDK
+- Google Cloud Console
+- Postman
+
+---
+
 
 ## Daftar Endpoint API
 
