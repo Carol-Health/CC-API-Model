@@ -2,6 +2,14 @@
 
 API ini dirancang untuk mendukung aplikasi **Carol Health**. Aplikasi ini membantu pengguna mendeteksi penyakit mulut melalui foto dan memberikan riwayat hasil prediksi secara otomatis.
 
+## Requirements
+
+- Python 3.8+
+- Firebase Admin SDK
+- Google Cloud Storage
+- TensorFlow
+- Flask
+  
 **Versi**: 1.0.0
 
 ---
