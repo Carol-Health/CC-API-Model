@@ -1,6 +1,4 @@
-# Carol Health API
 
-This API is designed to support the **Carol Health** application. The application helps users detect oral diseases through photos and provides an automated history of prediction results.
 ## Requirements
 
 - Flask
