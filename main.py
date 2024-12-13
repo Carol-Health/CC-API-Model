@@ -1,4 +1,3 @@
-
 from flask import Flask, request, jsonify
 from tensorflow.keras.models import load_model
 import tensorflow as tf
@@ -37,26 +36,26 @@ model = load_model(DESTINATION_MODEL_PATH)
 
 class_names = ['calculus', 'caries', 'gingivitis', 'hypodontia', 'tooth_discoloration', 'ulcer']
 
-# Fungsi upload foto mulut dari user ke Storage
+# Upload images to Cloud Storage
 def upload_to_storage(source_file, destination_name) :
     try:
         bucket_name = os.getenv("CLOUD_STORAGE_BUCKET")
         base_url = os.getenv("CLOUD_STORAGE_URL")
 
-        # Menghubungkan ke Cloud Storage
+        # Connect to Cloud Storage
         storage_client = storage.Client()
         bucket = storage_client.bucket(bucket_name)
         blob = bucket.blob(destination_name)
 
-        # Upload file ke Cloud Storage
+        # Upload file to Cloud Storage
         blob.upload_from_string(source_file, content_type="image/jpeg")
 
-        # Bangun URL publik
+        # Build Public URL for the images
         public_url = f"{base_url}{bucket_name}/{destination_name}"
 
         return public_url
     except Exception as e:
-        raise RuntimeError(f"Gagal upload ke bucket: {str(e)}")
+        raise RuntimeError(f"Failed to upload to bucket: {str(e)}")
 
 
 @app.route('/')
@@ -65,8 +64,8 @@ def home():
 
 @app.route("/predict", methods=["POST"])
 def predict():
-    # Validasi UID dari request body
-    uid = request.form.get('uid')  # Asumsi UID dikirim melalui form-data
+    # Validate UID from request body
+    uid = request.form.get('uid')  # send UID from form-data
     if not uid:
         return jsonify({"error": "UID is required"}), 400
 
@@ -82,9 +81,10 @@ def predict():
     except Exception as e:
         return jsonify({"error": f"Failed to upload image: {str(e)}"}), 500
     
+    // Images Processing
     img = tf.io.decode_image(file_data, channels=3)
-    img = tf.image.resize(img, (224, 224))  # Resize sesuai model input
-    img = img / 255.0  # Normalisasi
+    img = tf.image.resize(img, (224, 224))
+    img = img / 255.0 
     img = np.expand_dims(img, axis=0)
 
     # Predict
@@ -92,7 +92,7 @@ def predict():
     predicted_class = class_names[np.argmax(predictions)]
     confidence = np.max(predictions)
 
-    # Jika confidence rendah
+    # If confidence is low
     if confidence < 0.9:
         return jsonify({
             "class": "Not detected",
@@ -101,10 +101,10 @@ def predict():
             "image_url": public_url
         })
 
-    # Ambil data dari Firestore
+    # Get data from Firestore
     disease_data = get_disease_info(predicted_class)
     
-    # Simpan data prediksi ke Firestore
+    # Store prediction's data to Firestore
     prediction_id = str(uuid.uuid4())  # Generate a unique ID
     utc_now = datetime.utcnow().replace(tzinfo=pytz.utc)
     wib = pytz.timezone('Asia/Jakarta')
@@ -113,7 +113,7 @@ def predict():
     
     prediction_data = {
         "id": prediction_id,
-        "uid": uid,  # Tambahkan UID ke data prediksi
+        "uid": uid,  # Add UID to prediction data
         "name": disease_data.get("name", "No name available"),
         "description": disease_data.get("description", "No description available"),
         "treatment": disease_data.get("treatment", "No treatment available"),
@@ -121,7 +121,7 @@ def predict():
         "createdAt": formatted_time
     }
     
-    # Simpan data prediksi di koleksi 'predictions'
+    # Store prediction data to collection 'predictions'
     db.collection("predictions").document(prediction_id).set(prediction_data)
     
     return jsonify({
@@ -133,22 +133,22 @@ def predict():
         "createdAt": formatted_time
     })
 
-@app.route("/history", methods=["GET"])
-def get_history():
+@app.route("/history/<uid>", methods=["GET"])
+def get_history(uid):
     try:
-        predictions_ref = db.collection("predictions")
-        predictions = predictions_ref.stream()
+        predictions_ref = db.collection("predictions").where('uid', "==", uid)
+        predictions = predictions_ref.get()
 
         history = []
         for prediction in predictions:
             prediction_data = prediction.to_dict()
             history.append({
                 "id": prediction.id,
+                "createdAt": prediction_data.get("createdAt"),
                 "name": prediction_data.get("name"),
                 "description": prediction_data.get("description"),
                 "treatment": prediction_data.get("treatment"),
-                "image_url": prediction_data.get("image_url"),
-                "createdAt": prediction_data.get("createdAt")
+                "image_url": prediction_data.get("image_url")
             })
 
         return jsonify({"status": "success", "data": history})
@@ -158,9 +158,7 @@ def get_history():
 
 
 def get_disease_info(diseases_class):
-    """
-    Mengambil deskripsi dan treatment dari Firestore berdasarkan kelas penyakit.
-    """
+    # Get description and treatment from Firestore
     try:
         doc_ref = db.collection("diseases").document(diseases_class)
         doc = doc_ref.get()
