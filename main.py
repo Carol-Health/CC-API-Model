@@ -81,7 +81,7 @@ def predict():
     except Exception as e:
         return jsonify({"error": f"Failed to upload image: {str(e)}"}), 500
     
-    // Images Processing
+    # Images Processing
     img = tf.io.decode_image(file_data, channels=3)
     img = tf.image.resize(img, (224, 224))
     img = img / 255.0 
@@ -136,8 +136,8 @@ def predict():
 @app.route("/history/<uid>", methods=["GET"])
 def get_history(uid):
     try:
-        predictions_ref = db.collection("predictions").where('uid', "==", uid).get
-        predictions = predictions_ref.stream()
+        predictions_ref = db.collection("predictions").where('uid', "==", uid)
+        predictions = predictions_ref.get()
 
         history = []
         for prediction in predictions:
